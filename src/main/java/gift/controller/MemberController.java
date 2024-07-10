@@ -2,10 +2,16 @@ package gift.controller;
 
 import gift.model.Member;
 import gift.service.MemberService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/members")
@@ -25,9 +31,10 @@ public class MemberController {
     }
 
     @PostMapping("/register")
-    public String register(@ModelAttribute Member member) {
-        memberService.registerMember(member);
-        return "redirect:/login";
+    public String register(@ModelAttribute Member member, HttpServletResponse response) {
+        String token = memberService.registerMember(member);
+        response.setHeader("Authorization", "Bearer " + token);
+        return "redirect:/members/login";
     }
 
     @GetMapping("/login")
@@ -36,14 +43,16 @@ public class MemberController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestParam String email, @RequestParam String password, Model model) {
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> login(@RequestParam String email, @RequestParam String password) {
+        Map<String, String> response = new HashMap<>();
         try {
             String token = memberService.login(email, password);
-            model.addAttribute("token", token);
-            return "redirect:/admin/products";
+            response.put("token", token);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (RuntimeException e) {
-            model.addAttribute("error", "Invalid email or password");
-            return "login";
+            response.put("error", "Invalid email or password");
+            return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
         }
     }
 }

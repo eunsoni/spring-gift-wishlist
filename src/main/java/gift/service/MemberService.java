@@ -22,6 +22,7 @@ public class MemberService {
     }
 
     public String registerMember(Member member) {
+        // 비밀번호 암호화
         member.setPassword(passwordEncoder.encode(member.getPassword()));
         memberDao.registerMember(member);
         return jwtTokenProvider.createToken(member.getEmail());
@@ -29,6 +30,7 @@ public class MemberService {
 
     public String login(String email, String password) {
         Member member = memberDao.findByEmail(email);
+        // 비밀번호 검증
         if (member != null && passwordEncoder.matches(password, member.getPassword())) {
             return jwtTokenProvider.createToken(email);
         }

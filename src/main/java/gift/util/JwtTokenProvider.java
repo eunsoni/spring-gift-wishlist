@@ -1,8 +1,5 @@
 package gift.util;
 
-
-//secretKeyFor(SignatureAlgorithm.HS256)??
-import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;

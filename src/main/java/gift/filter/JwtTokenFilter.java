@@ -1,36 +1,43 @@
 package gift.filter;
 
 import gift.util.JwtTokenProvider;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
+import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public class JwtTokenFilter extends OncePerRequestFilter {
+@Component
+public class JwtTokenFilter implements Filter {
 
     private final JwtTokenProvider jwtTokenProvider;
 
+    @Autowired
     public JwtTokenFilter(JwtTokenProvider jwtTokenProvider) {
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException {
-        String token = resolveToken(request);
-        if (token != null && jwtTokenProvider.validateToken(token)) {
-            String email = jwtTokenProvider.getEmail(token);
-            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(email, null, null);
-            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(auth);
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+            throws IOException, ServletException {
+        HttpServletRequest httpServletRequest = (HttpServletRequest) request;
+        String token = resolveToken(httpServletRequest);
+
+        if (httpServletRequest.getRequestURI().startsWith("/members")) {
+            // login, register 요청일 경우 필터링하지 않음
+            chain.doFilter(request, response);
+            return;
         }
-        filterChain.doFilter(request, response);
+
+        if (token == null || !jwtTokenProvider.validateToken(token)) {
+            ((HttpServletResponse) response).sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token");
+            return;
+        } else {
+            // 필요한 경우 추가 작업 수행 가능
+        }
+        chain.doFilter(request, response);
     }
 
     private String resolveToken(HttpServletRequest request) {
